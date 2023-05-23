@@ -91,18 +91,48 @@ if option_yn == 'YES':
     fig.update_layout(width=800, height=500)
     st.write(fig)
     st.markdown("---")
-result_matching = matching(info_retrieval, resumes)
-option_yn = st.selectbox("Matching Ruler ?", options=['YES', 'NO'])
+
+
+    
+results_matching = matching(info_retrieval, resumes)
+option_yn = st.selectbox("Matching Ruler by model All-mpnet-base-v2?", options=['YES', 'NO'])
 if option_yn == 'YES':
-    indexs = [a for a in range(len(result_matching["_id"]))]
+    indexs = [a for a in range(len(results_matching[0]["_id"]))]
     st.markdown("---")
-    st.markdown("### Matching Ruler :")
+    st.markdown("### Matching Ruler by model All-mpnet-base-v2 :")
     fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "id", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
                                                 fill_color='#f0a500'),
-                                    cells=dict(values=[indexs, result_matching["_id"], result_matching["matching score job 0"], result_matching["degrees"], result_matching["majors"], result_matching["skills"]], line_color='darkslategray',
+                                    cells=dict(values=[indexs, results_matching[0]["_id"], results_matching[0]["matching score job 0"], results_matching[0]["degrees"], results_matching[0]["majors"], results_matching[0]["skills"]], line_color='darkslategray',
                                                 fill_color='#f4f4f4'))
                             ])
+    fig.update_layout(width=800, height=500)
+    st.write(fig)
+    st.markdown("---")
 
+option_yn = st.selectbox("Matching Ruler by model SBERT Paraphrase-MiniLM-L6-v2?", options=['YES', 'NO'])
+if option_yn == 'YES':
+    indexs = [a for a in range(len(results_matching[1]["_id"]))]
+    st.markdown("---")
+    st.markdown("### Matching Ruler by model SBERT Paraphrase-MiniLM-L6-v2 :")
+    fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "id", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
+                                                fill_color='#f0a500'),
+                                    cells=dict(values=[indexs, results_matching[1]["_id"], results_matching[1]["matching score job 0"], results_matching[1]["degrees"], results_matching[1]["majors"], results_matching[1]["skills"]], line_color='darkslategray',
+                                                fill_color='#f4f4f4'))
+                            ])
+    fig.update_layout(width=800, height=500)
+    st.write(fig)
+    st.markdown("---")
+
+option_yn = st.selectbox("Matching Ruler by model SBERT Paraphrase-MiniLM-L12-v1?", options=['YES', 'NO'])
+if option_yn == 'YES':
+    indexs = [a for a in range(len(results_matching[2]["_id"]))]
+    st.markdown("---")
+    st.markdown("### Matching Ruler by model SBERT Paraphrase-MiniLM-L12-v1:")
+    fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "id", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
+                                                fill_color='#f0a500'),
+                                    cells=dict(values=[indexs, results_matching[2]["_id"], results_matching[2]["matching score job 0"], results_matching[2]["degrees"], results_matching[2]["majors"], results_matching[2]["skills"]], line_color='darkslategray',
+                                                fill_color='#f4f4f4'))
+                            ])
     fig.update_layout(width=800, height=500)
     st.write(fig)
     st.markdown("---")

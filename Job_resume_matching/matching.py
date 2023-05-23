@@ -27,6 +27,7 @@ def transform_dataframe_to_json(dataframe):
     return json_data
 
 def matching(jobs, resumes):
+    results = []
     with open('Resources/data/labels.json') as fp:
             labels = json.load(fp)
     # jobs = pd.read_csv('Resources/data/job_description_by_spacy.csv', index_col=0)
@@ -34,14 +35,16 @@ def matching(jobs, resumes):
     resumes = modifying_type_resume(resumes)
     # jobs = modifying_type_job(jobs)
     rules = Rules(labels, resumes, jobs)
-    resumes_matched_jobs = pd.DataFrame()
     for job_index in range(len(jobs)):
         resumes_matched = rules.matching_score(resumes, jobs, job_index)
         # resumes_matched_jobs = resumes_matched_jobs.append(resumes_matched)
-        resumes_matched_jobs = pd.concat([resumes_matched_jobs, resumes_matched])
+        for resume_matched in resumes_matched:
+            resumes_matched_jobs = pd.DataFrame()
+            resumes_matched_jobs = pd.concat([resumes_matched_jobs, resume_matched])
     # resumes_matched_json = transform_dataframe_to_json(resumes_matched_jobs)
-    resumes_matched_jobs = resumes_matched_jobs.sort_values(by=["matching score job 0"], ascending=False)
-    return resumes_matched_jobs
+            resumes_matched_jobs = resumes_matched_jobs.sort_values(by=["matching score job 0"], ascending=False)
+            results.append(resumes_matched_jobs)
+    return results
 
 def main():
     results = matching()
