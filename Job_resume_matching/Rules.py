@@ -101,7 +101,7 @@ class Rules:
         return num_unique_job_skills, unique_job_skills
 
     def semantic_similarity(self, job, resume):
-        model = SentenceTransformer('all-mpnet-base-v2')
+        model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
         # Encoding:
         score = 0
         sen = job + resume
@@ -118,7 +118,7 @@ class Rules:
     
     def semantic_similarity_MiniLM_L6_v2(self, job, resume):
         """calculate similarity with SBERT paraphrase-MiniLM-L6-v2"""
-        model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+        model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
         #Encoding:
         score = 0
         sen = job+resume
@@ -134,7 +134,7 @@ class Rules:
     
     def semantic_similarity_MiniLM_L12_v1(self, job, resume):
         """calculate similarity with all-MiniLM-L12-v1"""
-        model = SentenceTransformer('all-MiniLM-L12-v1')
+        model = SentenceTransformer('sentence-transformers/all-MiniLM-L12-v1')
         #Encoding:
         score = 0
         sen = job+resume
@@ -179,14 +179,14 @@ class Rules:
         resumes = self.degree_matching(resumes, jobs, job_index)
         # matching majors
         resumes = self.major_matching(resumes, jobs, job_index)
+        resumes_L6_v2 = resumes.copy()
+        resumes_L12_v1 = resumes.copy()
         # matching skills
         num_unique_job_skills, job_skills = self.unique_job_skills(jobs, job_index)
         # matching skills semantically
         resumes1 = self.skills_semantic_matching(resumes, job_index, job_skills)
-        resumes_L6_v2 = self.skills_semantic_matching_by_MiniLM_L6_v2(resumes, job_index, job_skills)
-        resumes_L12_v1 = self.skills_semantic_matching_by_MiniLM_L12_v1(resumes, job_index, job_skills)
-        print("resumes1:", resumes1)
-        print("resumes_L6_v2:", resumes_L6_v2)
+        resumes_L6_v2 = self.skills_semantic_matching_by_MiniLM_L6_v2(resumes_L6_v2, job_index, job_skills)
+        resumes_L12_v1 = self.skills_semantic_matching_by_MiniLM_L12_v1(resumes_L12_v1, job_index, job_skills)
         for resumes in [resumes1, resumes_L6_v2, resumes_L12_v1]:
             resumes["matching score job " + str(job_index)] = 0
             resumes["job index"] = job_index
