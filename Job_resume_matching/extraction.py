@@ -17,7 +17,9 @@ def extraction(job_descriptions, index):
     degrees_patterns_path = 'Resources/data/degrees.jsonl'
     majors_patterns_path = 'Resources/data/majors.jsonl'
     skills_patterns_path = 'Resources/data/skills.jsonl'
-    jobs = pd.read_csv(job_descriptions, index_col=0)
+    # jobs = pd.read_csv(job_descriptions, index_col=0)
+    jobs = job_descriptions
+    jobs.set_index('Name', inplace = True)
     job_extraction = JobInfoExtraction(skills_patterns_path, majors_patterns_path, degrees_patterns_path, jobs)
     jobs = job_extraction.extract_entities(jobs)
     # jobs_json = transform_dataframe_to_json(jobs)
