@@ -37,22 +37,22 @@ async def load_input_data_resumes():
     resumes = upload_file_resumes_csv()
     return resumes
 
-async def show_description_name(Jobs):
-    if len(Jobs['Name']) <= 1:
+async def show_description_name(_Jobs):
+    if len(_Jobs['Name']) <= 1:
         st.write(
             "There is only 1 Job Description present. It will be used to create scores.")
     else:
-        st.write("There are ", len(Jobs['Name']),
+        st.write("There are ", len(_Jobs['Name']),
                 "Job Descriptions available. Please select one.")
     # Asking to Print the Job Desciption Names
-    if len(Jobs['Name']) > 1:
+    if len(_Jobs['Name']) > 1:
         option_yn = st.selectbox(
             "Show the Job Description Names?", options=['YES', 'NO'])
         if option_yn == 'YES':
-            index = [a for a in range(len(Jobs['Name']))]
+            index = [a for a in range(len(_Jobs['Name']))]
             fig = go.Figure(data=[go.Table(header=dict(values=["Job No.", "Job Desc. Name"], line_color='darkslategray',
                                                     fill_color='lightskyblue'),
-                                        cells=dict(values=[index, Jobs['Name']], line_color='darkslategray',
+                                        cells=dict(values=[index, _Jobs['Name']], line_color='darkslategray',
                                                     fill_color='cyan'))
                                 ])
             fig.update_layout(width=700, height=400)
@@ -96,8 +96,9 @@ async def show_information_retrieval(Jobs, index):
         st.markdown("---")
     return info_retrieval
 
-async def show_matching_rule(indexs, info_retrieval, resumes):
-    results_matching = matching(info_retrieval, resumes)
+async def show_matching_rule(indexs, info_retrieval, _resumes):
+    results_matching = await asyncio.gather(matching(info_retrieval, _resumes))
+    results_matching = results_matching[0]
     option_yn = st.selectbox("Matching Ruler by model All-mpnet-base-v2?", options=['YES', 'NO'])
     if option_yn == 'YES':
         indexs = [a for a in range(len(results_matching[0]["_id"]))]
@@ -140,6 +141,170 @@ async def show_matching_rule(indexs, info_retrieval, resumes):
         st.write(fig)
         st.markdown("---")
 
+@st.cache_data()
+def calculate_scores(_resumes, _job_description, index):
+    scores = []
+    for x in range(_resumes.shape[0]):
+        score = Similar.match(
+            _resumes['TF_Based'][x], _job_description['TF_Based'][index])
+        scores.append(score)
+    return scores
+
+def ranked_resumes(_Resumes, _Jobs, index):
+    _Resumes['Scores'] = calculate_scores(_Resumes, _Jobs, index)
+    Ranked_resumes = _Resumes.sort_values(
+        by=['Scores'], ascending=False).reset_index(drop=True)
+
+    Ranked_resumes['Rank'] = pd.DataFrame(
+        [i for i in range(1, len(Ranked_resumes['Scores'])+1)])
+    return Ranked_resumes
+
+def score_table_plot(_Ranked_resumes):
+    fig1 = go.Figure(data=[go.Table(
+    header=dict(values=["Rank", "Name", "Scores"],
+                fill_color='#00416d',
+                align='center', font=dict(color='white', size=16)),
+    cells=dict(values=[_Ranked_resumes.Rank, _Ranked_resumes.Name, _Ranked_resumes.Scores],
+            fill_color='#d6e0f0',
+            align='left'))])
+    fig1.update_layout(title="Top Ranked Resumes", width=700, height=1100)
+    st.write(fig1)
+    st.markdown("---")
+    fig2 = px.bar(_Ranked_resumes,
+                x=_Ranked_resumes['Name'], y=_Ranked_resumes['Scores'], color='Scores',
+                color_continuous_scale='haline', title="Score and Rank Distribution")
+    # fig.update_layout(width=700, height=700)
+    st.write(fig2)
+    st.markdown("---")
+
+
+@st.cache_data()
+def get_list_of_words(document):
+    Document = []
+
+    for a in document:
+        raw = a.split(" ")
+        Document.append(raw)
+
+    return Document
+
+def tfidf(_Resumes):
+    document = get_list_of_words(_Resumes['Cleaned'])
+
+    id2word = corpora.Dictionary(document)
+    corpus = [id2word.doc2bow(text) for text in document]
+
+
+    lda_model = gensim.models.ldamodel.LdaModel(corpus=corpus, id2word=id2word, num_topics=6, random_state=100,
+                                                update_every=3, chunksize=100, passes=50, alpha='auto', per_word_topics=True)
+    return lda_model, corpus
+
+# @st.cache_data  # Trying to improve performance by reducing the rerun computations
+def format_topics_sentences(ldamodel, corpus):
+    sent_topics_df = []
+    for i, row_list in enumerate(ldamodel[corpus]):
+        row = row_list[0] if ldamodel.per_word_topics else row_list
+        row = sorted(row, key=lambda x: (x[1]), reverse=True)
+        for j, (topic_num, prop_topic) in enumerate(row):
+            if j == 0:
+                wp = ldamodel.show_topic(topic_num)
+                topic_keywords = ", ".join([word for word, prop in wp])
+                sent_topics_df.append(
+                    [i, int(topic_num), round(prop_topic, 4)*100, topic_keywords])
+            else:
+                break
+
+    return sent_topics_df
+
+def topic_word_clound(lda_model):
+    st.markdown("## Topics and Topic Related Keywords ")
+    st.markdown(
+        """This Wordcloud representation shows the Topic Number and the Top Keywords that contstitute a Topic.
+        This further is used to cluster the resumes.      """)
+
+    cols = [color for name, color in mcolors.TABLEAU_COLORS.items()]
+
+    cloud = WordCloud(background_color='white',
+                    width=2500,
+                    height=1800,
+                    max_words=10,
+                    colormap='tab10',
+                    collocations=False,
+                    color_func=lambda *args, **kwargs: cols[i],
+                    prefer_horizontal=1.0)
+
+    topics = lda_model.show_topics(formatted=False)
+
+    fig, axes = plt.subplots(2, 3, figsize=(10, 10), sharex=True, sharey=True)
+
+    for i, ax in enumerate(axes.flatten()):
+        fig.add_subplot(ax)
+        topic_words = dict(topics[i][1])
+        cloud.generate_from_frequencies(topic_words, max_font_size=300)
+        plt.gca().imshow(cloud)
+        plt.gca().set_title('Topic ' + str(i), fontdict=dict(size=16))
+        plt.gca().axis('off')
+
+
+    plt.subplots_adjust(wspace=0, hspace=0)
+    plt.axis('off')
+    plt.margins(x=0, y=0)
+    plt.tight_layout()
+    st.pyplot(plt)
+
+    st.markdown("---")
+
+def show_sunburst_graph(_lda_model, _corpus, _Resumes):
+    df_topic_sents_keywords = format_topics_sentences(
+    ldamodel=_lda_model, corpus=_corpus)
+    df_some = pd.DataFrame(df_topic_sents_keywords, columns=[
+                        'Document No', 'Dominant Topic', 'Topic % Contribution', 'Keywords'])
+    df_some['Names'] = _Resumes['Name']
+
+    df = df_some
+
+    st.markdown("## Topic Modelling of Resumes ")
+    st.markdown(
+        "Using LDA to divide the topics into a number of usefull topics and creating a Cluster of matching topic resumes.  ")
+    fig3 = px.sunburst(df, path=['Dominant Topic', 'Names'], values='Topic % Contribution',
+                    color='Dominant Topic', color_continuous_scale='viridis', width=800, height=800, title="Topic Distribution Graph")
+    st.write(fig3)
+
+def resume_printing(Ranked_resumes):
+    option_2 = st.selectbox("Show the Best Matching Resumes?", options=[
+    'YES', 'NO'])
+    if option_2 == 'YES':
+        indx = st.slider("Which resume to display ?:",
+                        1, Ranked_resumes.shape[0], 1)
+
+        st.write("Displaying Resume with Rank: ", indx)
+        st.markdown("---")
+        st.markdown("## **Resume** ")
+        value = Ranked_resumes.iloc[indx-1, 2]
+        st.markdown("#### The Word Cloud For the Resume")
+        wordcloud = WordCloud(width=800, height=800,
+                            background_color='white',
+                            colormap='viridis', collocations=False,
+                            min_font_size=10).generate(value)
+        plt.figure(figsize=(7, 7), facecolor=None)
+        plt.imshow(wordcloud)
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        st.pyplot(plt)
+
+        st.write("With a Match Score of :", Ranked_resumes.iloc[indx-1, 6])
+        fig = go.Figure(data=[go.Table(
+            header=dict(values=["Resume"],
+                        fill_color='#f0a500',
+                        align='center', font=dict(color='white', size=16)),
+            cells=dict(values=[str(value)],
+                    fill_color='#f4f4f4',
+                    align='left'))])
+
+        fig.update_layout(width=800, height=1200)
+        st.write(fig)
+        # st.text(df_sorted.iloc[indx-1, 1])
+        st.markdown("---")
 
 async def main():
     await asyncio.gather(load_title_dasboard())
@@ -147,4 +312,11 @@ async def main():
     _ , index  = await asyncio.gather(show_description_name(Jobs), show_description(Jobs))
     info_retrieval = await asyncio.gather(show_information_retrieval(Jobs, index))
     await asyncio.gather(show_matching_rule(index, info_retrieval[0], resumes))
+    # scores = calculate_scores(resumes, Jobs)
+    Ranked_resumes = ranked_resumes(Resumes, Jobs, index)
+    score_table_plot(Ranked_resumes)
+    lda_model, corpus = tfidf(Resumes)
+    topic_word_clound(lda_model)
+    show_sunburst_graph(lda_model, corpus, Resumes)
+    resume_printing(Ranked_resumes)
 asyncio.run(main())

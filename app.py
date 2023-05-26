@@ -77,7 +77,8 @@ if option_yn == 'YES':
     st.write(fig)
     st.markdown("---")
 
-info_retrieval = extraction('Job_Data.csv', index)
+info_retrieval = extraction(Jobs, index)
+print(info_retrieval)
 option_yn = st.selectbox("Information Retrieval ?", options=['YES', 'NO'])
 if option_yn == 'YES':
     st.markdown("---")

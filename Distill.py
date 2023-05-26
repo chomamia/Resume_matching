@@ -65,7 +65,7 @@ def upload_file_Resumes_csv():
             df = pd.read_csv(upload_file)
             return df
         except:
-            return "Please upload file csv"
+            return []
         
 def upload_file_resumes_csv():
     upload_file = st.file_uploader("Choose a file resumes type csv", key = "2")
@@ -74,7 +74,7 @@ def upload_file_resumes_csv():
             df = pd.read_csv(upload_file)
             return df
         except:
-            return "Please upload file csv"
+            return []
         
 def upload_file_jobs_csv():
     upload_file = st.file_uploader("Choose a file Jobs type csv", key = "3")
@@ -83,4 +83,4 @@ def upload_file_jobs_csv():
             df = pd.read_csv(upload_file)
             return df
         except:
-            return "Please upload file csv"
+            return []

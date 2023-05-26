@@ -2,7 +2,7 @@ import ast
 # from Resources import DEGREES_IMPORTANCE
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-
+import asyncio
 DEGREES_IMPORTANCE = {'high school': 0, 'associate': 1, 'BS-LEVEL': 2, 'MS-LEVEL': 3, 'PHD-LEVEL': 4}
 ENTITIES = ['BS-LEVEL', 'MS-LEVEL', 'PHD-LEVEL', 'DEV', 'AI', 'CODING', 'DATA SCIENCES', 'AUTOMATION', 'BIG DATA',
             'WEB-DEVELOPMENT', 'MOBILE-DEVELOPMENT']
@@ -148,7 +148,7 @@ class Rules:
         score = score/len(job)  
         return round(score,3)
 
-    def skills_semantic_matching(self, resumes, job_index,job_skills):
+    async def skills_semantic_matching(self, resumes, job_index,job_skills):
         """calculate the skills semantic matching scores between resumes and job description"""
         resumes['Skills job ' + str(job_index) + ' semantic matching'] = 0
         for i, row in resumes.iterrows():
@@ -156,7 +156,7 @@ class Rules:
                 self.semantic_similarity(job_skills, resumes['skills'][i])
         return resumes
 
-    def skills_semantic_matching_by_MiniLM_L6_v2(self, resumes, job_index, job_skills):
+    async def skills_semantic_matching_by_MiniLM_L6_v2(self, resumes, job_index, job_skills):
         """calculate the skills semantic matching scores between resumes and job description by semantic MiniLM_L6_v2"""
         resumes['Skills job ' + str(job_index) + ' semantic matching'] = 0
         for i, row in resumes.iterrows():
@@ -164,7 +164,7 @@ class Rules:
                 self.semantic_similarity_MiniLM_L6_v2(job_skills, resumes['skills'][i])
         return resumes
     
-    def skills_semantic_matching_by_MiniLM_L12_v1(self, resumes, job_index, job_skills):
+    async def skills_semantic_matching_by_MiniLM_L12_v1(self, resumes, job_index, job_skills):
         """calculate the skills semantic matching scores between resumes and job description by semantic MiniLM_L12_v1"""
         resumes['Skills job ' + str(job_index) + ' semantic matching'] = 0
         for i, row in resumes.iterrows():
@@ -173,7 +173,7 @@ class Rules:
         return resumes
     
     # calculate matching scores
-    def matching_score(self, resumes, jobs, job_index):
+    async def matching_score(self, resumes, jobs, job_index):
         results = []
         # matching degrees
         resumes = self.degree_matching(resumes, jobs, job_index)
@@ -183,10 +183,13 @@ class Rules:
         resumes_L12_v1 = resumes.copy()
         # matching skills
         num_unique_job_skills, job_skills = self.unique_job_skills(jobs, job_index)
-        # matching skills semantically
-        resumes1 = self.skills_semantic_matching(resumes, job_index, job_skills)
-        resumes_L6_v2 = self.skills_semantic_matching_by_MiniLM_L6_v2(resumes_L6_v2, job_index, job_skills)
-        resumes_L12_v1 = self.skills_semantic_matching_by_MiniLM_L12_v1(resumes_L12_v1, job_index, job_skills)
+        # # matching skills semantically
+        # resumes1 = self.skills_semantic_matching(resumes, job_index, job_skills)
+        # resumes_L6_v2 = self.skills_semantic_matching_by_MiniLM_L6_v2(resumes_L6_v2, job_index, job_skills)
+        # resumes_L12_v1 = self.skills_semantic_matching_by_MiniLM_L12_v1(resumes_L12_v1, job_index, job_skills)
+        resumes1, resumes_L6_v2, resumes_L12_v1 = await asyncio.gather(self.skills_semantic_matching(resumes, job_index, job_skills), \
+                                                                       self.skills_semantic_matching_by_MiniLM_L6_v2(resumes_L6_v2, job_index, job_skills), \
+                                                                        self.skills_semantic_matching_by_MiniLM_L12_v1(resumes_L12_v1, job_index, job_skills))
         for resumes in [resumes1, resumes_L6_v2, resumes_L12_v1]:
             resumes["matching score job " + str(job_index)] = 0
             resumes["job index"] = job_index

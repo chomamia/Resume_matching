@@ -3,6 +3,7 @@ import json
 # from Rules import Rules
 from Job_resume_matching.Rules import Rules
 import ast
+import asyncio
 
 
 def modifying_type_resume(resumes):
@@ -26,7 +27,7 @@ def transform_dataframe_to_json(dataframe):
 
     return json_data
 
-def matching(jobs, resumes):
+async def matching(jobs, resumes):
     results = []
     with open('Resources/data/labels.json') as fp:
             labels = json.load(fp)
@@ -36,9 +37,9 @@ def matching(jobs, resumes):
     # jobs = modifying_type_job(jobs)
     rules = Rules(labels, resumes, jobs)
     for job_index in range(len(jobs)):
-        resumes_matched = rules.matching_score(resumes, jobs, job_index)
+        resumes_matched = await asyncio.gather(rules.matching_score(resumes, jobs, job_index))
         # resumes_matched_jobs = resumes_matched_jobs.append(resumes_matched)
-        for resume_matched in resumes_matched:
+        for resume_matched in resumes_matched[0]:
             resumes_matched_jobs = pd.DataFrame()
             resumes_matched_jobs = pd.concat([resumes_matched_jobs, resume_matched])
     # resumes_matched_json = transform_dataframe_to_json(resumes_matched_jobs)
