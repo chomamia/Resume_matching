@@ -17,8 +17,15 @@ from Job_resume_matching.extraction_resume import extraction_resume
 from Job_resume_matching.matching import matching
 from Distill import upload_file_jobs_csv, upload_file_resumes_csv, upload_file_Resumes_csv
 import asyncio
+from Database.connect_database import QueryDatabase
 # import nest_asycio
 
+import yacs.config
+from config import get_default_config
+
+def load_config() -> yacs.config.CfgNode:
+    config = get_default_config()
+    return config
 
 async def load_title_dasboard():
     image = Image.open('Images//logo.png')
@@ -97,23 +104,46 @@ async def show_information_retrieval(Jobs, index):
         st.markdown("---")
     return info_retrieval
 
-async def show_information_resume(Resume):
-    info_retrieval_resume = extraction_resume(Resume)
-    option_yn = st.selectbox("Information Retrieval Resume ?", options=['YES', 'NO'])
+async def show_information_retrieval_resumes(_Resumes):
+    info_retrieval_resume = extraction_resume(_Resumes)
     index = [a for a in range(len(info_retrieval_resume['Skills']))]
+    option_yn = st.selectbox("Information Retrieval Resumes ?", options=['YES', 'NO'])
     if option_yn == 'YES':
         st.markdown("---")
-        st.markdown("### Information Retrieval :")
-        fig = go.Figure(data=[go.Table(columnwidth = [1, 1, 2 , 3], header=dict(values=["Index", "Minimum degree level", "Acceptable majors", "Skills"], line_color='darkslategray',
+        st.markdown("### Information Retrieval Resumes:")
+        fig = go.Figure(data=[go.Table(columnwidth = [1, 1, 2 , 3], header=dict(values=["Index", "Degrees", "Majors", "Skills"], line_color='darkslategray',
                                                     fill_color='#f0a500'),
-                                        cells=dict(values=[index, info_retrieval_resume["Minimum degree level"], info_retrieval_resume["Acceptable majors"], info_retrieval_resume["Skills"]], line_color='darkslategray',
+                                        cells=dict(values=[index, info_retrieval_resume["degrees"], info_retrieval_resume["majors"], info_retrieval_resume["Skills"]], line_color='darkslategray',
                                                     fill_color='#f4f4f4'))
                                 ])
 
         fig.update_layout(width=800, height=500)
         st.write(fig)
         st.markdown("---")
+    for i in range(len(info_retrieval_resume)):
+        degrees =  info_retrieval_resume["degrees"][i].replace("[", "")
+        degrees = degrees.replace("]", "")
+        degrees = degrees.split(",")
+        info_retrieval_resume["degrees"][i] = str(degrees)
+        majors =  info_retrieval_resume["majors"][i].replace("[", "")
+        majors = majors.replace("]", "")
+        majors = majors.split(",")
+        info_retrieval_resume["majors"][i] = str(majors) 
+        skills =  info_retrieval_resume["Skills"][i].replace("[", "")
+        skilss = skills.replace("]", "")
+        skills = skills.split(",")
+        info_retrieval_resume["Skills"][i] = str(skills)
     return info_retrieval_resume
+
+async def find_JD_by_keyword():
+    option_yn = st.selectbox("Find JB by keyword ?", options=['YES', 'NO'])
+    if option_yn == 'YES':
+        keyword = st.text_area("Enter keywords")
+        if keyword:
+            config = load_config()
+            database = QueryDatabase(keyword, config)
+            result = database.get_resumes_by_keyword(keyword)
+            print("result:", result)
 
 async def show_matching_rule(indexs, info_retrieval, _resumes):
     results_matching = await asyncio.gather(matching(info_retrieval, _resumes))
@@ -331,8 +361,12 @@ async def main():
     _ , index  = await asyncio.gather(show_description_name(Jobs), show_description(Jobs))
 
     info_retrieval = await asyncio.gather(show_information_retrieval(Jobs, index))
-    info_retrieval_resume = await asyncio.gather(show_information_resume(Resumes))
-    await asyncio.gather(show_matching_rule(index, info_retrieval[0], resumes))
+    info_retrieval_resumes = await asyncio.gather(show_information_retrieval_resumes(Resumes))
+    await asyncio.gather(find_JD_by_keyword())
+    print(info_retrieval_resumes[0])
+    print(type(info_retrieval_resumes[0]))
+    print(resumes)
+    await asyncio.gather(show_matching_rule(index, info_retrieval[0], info_retrieval_resumes[0]))
     # scores = calculate_scores(resumes, Jobs)
     Ranked_resumes = ranked_resumes(Resumes, Jobs, index)
     score_table_plot(Ranked_resumes)

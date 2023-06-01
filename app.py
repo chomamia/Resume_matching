@@ -23,12 +23,12 @@ st.title("Resume Matcher")
 
 
 # Reading the CSV files prepared by the fileReader.py
-# Resumes = pd.read_csv('Resume_Data.csv')
-# Jobs = pd.read_csv('Job_Data.csv')
-# resumes = pd.read_csv('Resources/data/resumes_by_spacy.csv')
-Resumes = upload_file_Resumes_csv()
-Jobs = upload_file_jobs_csv()
-resumes = upload_file_resumes_csv()
+Resumes = pd.read_csv('Resume_Data.csv')
+Jobs = pd.read_csv('Job_Data.csv')
+resumes = pd.read_csv('Resources/data/resumes_by_spacy.csv')
+# Resumes = upload_file_Resumes_csv()
+# Jobs = upload_file_jobs_csv()
+# resumes = upload_file_resumes_csv()
 
 ############################### JOB DESCRIPTION CODE ######################################
 # Checking for Multiple Job Descriptions
