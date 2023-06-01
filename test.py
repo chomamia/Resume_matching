@@ -1,5 +1,5 @@
-# from Resources import DEGREES_IMPORTANCE
 from spacy.lang.en import English
+import pandas as pd
 
 DEGREES_IMPORTANCE = {'high school': 0, 'associate': 1, 'BS-LEVEL': 2, 'MS-LEVEL': 3, 'PHD-LEVEL': 4}
 ENTITIES = ['BS-LEVEL', 'MS-LEVEL', 'PHD-LEVEL', 'DEV', 'AI', 'CODING', 'DATA SCIENCES', 'AUTOMATION', 'BIG DATA',
@@ -88,19 +88,16 @@ class JobInfoExtraction:
             jobs['Acceptable majors'][i] = self.match_majors_by_spacy(self, job)
             jobs['Skills'][i] = self.match_skills_by_spacy(self, job)
         return jobs
+    
+def main():
+    degrees_patterns_path = 'Resources/data/degrees.jsonl'
+    majors_patterns_path = 'Resources/data/majors.jsonl'
+    skills_patterns_path = 'Resources/data/skills.jsonl'
+    # jobs = pd.read_csv(job_descriptions, index_col=0)
+    jobs = pd.read_csv('/home/phuonghuu/Phuong_workspace/Naive-Resume-Matching/Job_Data.csv')
+    jobs.set_index('Name', inplace = True)
+    job_extraction = JobInfoExtraction(skills_patterns_path, majors_patterns_path, degrees_patterns_path, jobs)
+    jobs = job_extraction.extract_entities(jobs)
+    print(jobs)
 
-    def extract_entities_resumes(self, resumes):
-        # recognize and extract entities
-        resumes['degrees'] = ""
-        resumes['majors'] = ""
-        resumes['Skills'] = ""
-        for i, row in resumes.iterrows():
-            resume = resumes['Context'][i].replace('. ', ' ')
-            degrees = self.match_degrees_by_spacy(self, resume)
-            if len(degrees) != 0:
-                resumes['degrees'][i] = self.get_minimum_degree(self, degrees)
-            else:
-                resumes['degrees'][i] = ""
-            resumes['majors'][i] = self.match_majors_by_spacy(self, resume)
-            resumes['Skills'][i] = self.match_skills_by_spacy(self, resume)
-        return resumes
+main()
