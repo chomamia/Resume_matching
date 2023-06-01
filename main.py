@@ -13,6 +13,7 @@ import Similar
 from PIL import Image
 import time
 from Job_resume_matching.extraction import extraction
+from Job_resume_matching.extraction_resume import extraction_resume
 from Job_resume_matching.matching import matching
 from Distill import upload_file_jobs_csv, upload_file_resumes_csv, upload_file_Resumes_csv
 import asyncio
@@ -95,6 +96,24 @@ async def show_information_retrieval(Jobs, index):
         st.write(fig)
         st.markdown("---")
     return info_retrieval
+
+async def show_information_resume(Resume):
+    info_retrieval_resume = extraction_resume(Resume)
+    option_yn = st.selectbox("Information Retrieval Resume ?", options=['YES', 'NO'])
+    index = [a for a in range(len(info_retrieval_resume['Skills']))]
+    if option_yn == 'YES':
+        st.markdown("---")
+        st.markdown("### Information Retrieval :")
+        fig = go.Figure(data=[go.Table(columnwidth = [1, 1, 2 , 3], header=dict(values=["Index", "Minimum degree level", "Acceptable majors", "Skills"], line_color='darkslategray',
+                                                    fill_color='#f0a500'),
+                                        cells=dict(values=[index, info_retrieval_resume["Minimum degree level"], info_retrieval_resume["Acceptable majors"], info_retrieval_resume["Skills"]], line_color='darkslategray',
+                                                    fill_color='#f4f4f4'))
+                                ])
+
+        fig.update_layout(width=800, height=500)
+        st.write(fig)
+        st.markdown("---")
+    return info_retrieval_resume
 
 async def show_matching_rule(indexs, info_retrieval, _resumes):
     results_matching = await asyncio.gather(matching(info_retrieval, _resumes))
@@ -310,7 +329,9 @@ async def main():
     await asyncio.gather(load_title_dasboard())
     Resumes, Jobs, resumes = await asyncio.gather(load_input_data_Resumes(), load_input_data_Jobs(), load_input_data_resumes())
     _ , index  = await asyncio.gather(show_description_name(Jobs), show_description(Jobs))
+
     info_retrieval = await asyncio.gather(show_information_retrieval(Jobs, index))
+    info_retrieval_resume = await asyncio.gather(show_information_resume(Resumes))
     await asyncio.gather(show_matching_rule(index, info_retrieval[0], resumes))
     # scores = calculate_scores(resumes, Jobs)
     Ranked_resumes = ranked_resumes(Resumes, Jobs, index)
@@ -319,4 +340,5 @@ async def main():
     topic_word_clound(lda_model)
     show_sunburst_graph(lda_model, corpus, Resumes)
     resume_printing(Ranked_resumes)
+    
 asyncio.run(main())
