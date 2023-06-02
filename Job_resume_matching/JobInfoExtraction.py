@@ -93,7 +93,7 @@ class JobInfoExtraction:
         # recognize and extract entities
         resumes['degrees'] = ""
         resumes['majors'] = ""
-        resumes['Skills'] = ""
+        resumes['skills'] = ""
         for i, row in resumes.iterrows():
             resume = resumes['Context'][i].replace('. ', ' ')
             degrees = self.match_degrees_by_spacy(self, resume)
@@ -102,5 +102,6 @@ class JobInfoExtraction:
             else:
                 resumes['degrees'][i] = ""
             resumes['majors'][i] = self.match_majors_by_spacy(self, resume)
-            resumes['Skills'][i] = self.match_skills_by_spacy(self, resume)
+            resumes['skills'][i] = self.match_skills_by_spacy(self, resume)
+            
         return resumes

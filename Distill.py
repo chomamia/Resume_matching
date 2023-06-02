@@ -79,8 +79,8 @@ def upload_file_resumes_csv():
 def upload_file_jobs_csv():
     upload_file = st.file_uploader("Choose a file Jobs type csv", key = "3")
     if upload_file is not None:
-        try:
-            df = pd.read_csv(upload_file)
-            return df
-        except:
-            return []
+        # try:
+        df = pd.read_csv(upload_file)
+        return df
+        # except:
+        #     return []
