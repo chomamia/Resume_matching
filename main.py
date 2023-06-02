@@ -18,6 +18,8 @@ from Job_resume_matching.matching import matching
 from Distill import upload_file_jobs_csv, upload_file_resumes_csv, upload_file_Resumes_csv
 import asyncio
 from Database.connect_database import QueryDatabase
+import copy
+from fileReader_csv import file_Readert_resume
 # import nest_asycio
 
 import yacs.config
@@ -66,10 +68,10 @@ async def show_description_name(_Jobs):
             fig.update_layout(width=700, height=400)
             st.write(fig)
 
-async def show_description(Jobs):
+async def show_description(_Jobs):
     # Asking to chose the Job Description
     index = st.slider("Which JD to select ? : ", 0,
-                    len(Jobs['Name'])-1, 1)
+                    len(_Jobs['Name'])-1, 1)
     option_yn = st.selectbox("Show the Job Description ?", options=['YES', 'NO'])
     if option_yn == 'YES':
         st.markdown("---")
@@ -78,7 +80,7 @@ async def show_description(Jobs):
             header=dict(values=["Job Description"],
                         fill_color='#f0a500',
                         align='center', font=dict(color='white', size=16)),
-            cells=dict(values=[Jobs['Context'][index]],
+            cells=dict(values=[_Jobs['Context'][index]],
                     fill_color='#f4f4f4',
                     align='left'))])
 
@@ -87,15 +89,15 @@ async def show_description(Jobs):
         st.markdown("---")
     return index
 
-async def show_information_retrieval(Jobs, index):
-    info_retrieval = extraction(Jobs, index)
+async def show_information_retrieval(_Jobs, _index):
+    info_retrieval = extraction(_Jobs, _index)
     option_yn = st.selectbox("Information Retrieval ?", options=['YES', 'NO'])
     if option_yn == 'YES':
         st.markdown("---")
         st.markdown("### Information Retrieval :")
         fig = go.Figure(data=[go.Table(columnwidth = [1, 1, 2 , 3], header=dict(values=["Index", "Minimum degree level", "Acceptable majors", "Skills"], line_color='darkslategray',
                                                     fill_color='#f0a500'),
-                                        cells=dict(values=[index, info_retrieval["Minimum degree level"], info_retrieval["Acceptable majors"], info_retrieval["Skills"]], line_color='darkslategray',
+                                        cells=dict(values=[_index, info_retrieval["Minimum degree level"], info_retrieval["Acceptable majors"], info_retrieval["Skills"]], line_color='darkslategray',
                                                     fill_color='#f4f4f4'))
                                 ])
 
@@ -106,14 +108,14 @@ async def show_information_retrieval(Jobs, index):
 
 async def show_information_retrieval_resumes(_Resumes):
     info_retrieval_resume = extraction_resume(_Resumes)
-    index = [a for a in range(len(info_retrieval_resume['Skills']))]
+    index = [a for a in range(len(info_retrieval_resume['skills']))]
     option_yn = st.selectbox("Information Retrieval Resumes ?", options=['YES', 'NO'])
     if option_yn == 'YES':
         st.markdown("---")
         st.markdown("### Information Retrieval Resumes:")
         fig = go.Figure(data=[go.Table(columnwidth = [1, 1, 2 , 3], header=dict(values=["Index", "Degrees", "Majors", "Skills"], line_color='darkslategray',
                                                     fill_color='#f0a500'),
-                                        cells=dict(values=[index, info_retrieval_resume["degrees"], info_retrieval_resume["majors"], info_retrieval_resume["Skills"]], line_color='darkslategray',
+                                        cells=dict(values=[index, info_retrieval_resume["degrees"], info_retrieval_resume["majors"], info_retrieval_resume["skills"]], line_color='darkslategray',
                                                     fill_color='#f4f4f4'))
                                 ])
 
@@ -121,18 +123,9 @@ async def show_information_retrieval_resumes(_Resumes):
         st.write(fig)
         st.markdown("---")
     for i in range(len(info_retrieval_resume)):
-        degrees =  info_retrieval_resume["degrees"][i].replace("[", "")
-        degrees = degrees.replace("]", "")
-        degrees = degrees.split(",")
-        info_retrieval_resume["degrees"][i] = str(degrees)
-        majors =  info_retrieval_resume["majors"][i].replace("[", "")
-        majors = majors.replace("]", "")
-        majors = majors.split(",")
-        info_retrieval_resume["majors"][i] = str(majors) 
-        skills =  info_retrieval_resume["Skills"][i].replace("[", "")
-        skilss = skills.replace("]", "")
-        skills = skills.split(",")
-        info_retrieval_resume["Skills"][i] = str(skills)
+        info_retrieval_resume["degrees"][i] = str([info_retrieval_resume["degrees"][i]])
+        info_retrieval_resume["majors"][i] = str(info_retrieval_resume["majors"][i]) 
+        info_retrieval_resume["skills"][i] = str(info_retrieval_resume["skills"][i])
     return info_retrieval_resume
 
 async def find_JD_by_keyword():
@@ -145,17 +138,17 @@ async def find_JD_by_keyword():
             result = database.get_resumes_by_keyword(keyword)
             print("result:", result)
 
-async def show_matching_rule(indexs, info_retrieval, _resumes):
-    results_matching = await asyncio.gather(matching(info_retrieval, _resumes))
+async def show_matching_rule(_indexs, _info_retrieval, _resumes):
+    results_matching = await asyncio.gather(matching(_info_retrieval, _resumes))
     results_matching = results_matching[0]
     option_yn = st.selectbox("Matching Ruler by model All-mpnet-base-v2?", options=['YES', 'NO'])
     if option_yn == 'YES':
-        indexs = [a for a in range(len(results_matching[0]["_id"]))]
+        _indexs = [a for a in range(len(results_matching[0]["degrees"]))]
         st.markdown("---")
         st.markdown("### Matching Ruler by model All-mpnet-base-v2 :")
-        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "id", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
+        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
                                                     fill_color='#f0a500'),
-                                        cells=dict(values=[indexs, results_matching[0]["_id"], results_matching[0]["matching score job 0"], results_matching[0]["degrees"], results_matching[0]["majors"], results_matching[0]["skills"]], line_color='darkslategray',
+                                        cells=dict(values=[_indexs, results_matching[0]["matching score job 0"], results_matching[0]["degrees"], results_matching[0]["majors"], results_matching[0]["skills"]], line_color='darkslategray',
                                                     fill_color='#f4f4f4'))
                                 ])
         fig.update_layout(width=800, height=500)
@@ -164,12 +157,12 @@ async def show_matching_rule(indexs, info_retrieval, _resumes):
 
     option_yn = st.selectbox("Matching Ruler by model SBERT Paraphrase-MiniLM-L6-v2?", options=['YES', 'NO'])
     if option_yn == 'YES':
-        indexs = [a for a in range(len(results_matching[1]["_id"]))]
+        _indexs = [a for a in range(len(results_matching[1]["degrees"]))]
         st.markdown("---")
         st.markdown("### Matching Ruler by model SBERT Paraphrase-MiniLM-L6-v2 :")
-        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "id", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
+        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
                                                     fill_color='#f0a500'),
-                                        cells=dict(values=[indexs, results_matching[1]["_id"], results_matching[1]["matching score job 0"], results_matching[1]["degrees"], results_matching[1]["majors"], results_matching[1]["skills"]], line_color='darkslategray',
+                                        cells=dict(values=[_indexs, results_matching[1]["matching score job 0"], results_matching[1]["degrees"], results_matching[1]["majors"], results_matching[1]["skills"]], line_color='darkslategray',
                                                     fill_color='#f4f4f4'))
                                 ])
         fig.update_layout(width=800, height=500)
@@ -178,12 +171,12 @@ async def show_matching_rule(indexs, info_retrieval, _resumes):
 
     option_yn = st.selectbox("Matching Ruler by model SBERT Paraphrase-MiniLM-L12-v1?", options=['YES', 'NO'])
     if option_yn == 'YES':
-        indexs = [a for a in range(len(results_matching[2]["_id"]))]
+        _indexs = [a for a in range(len(results_matching[2]["degrees"]))]
         st.markdown("---")
         st.markdown("### Matching Ruler by model SBERT Paraphrase-MiniLM-L12-v1:")
-        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "id", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
+        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
                                                     fill_color='#f0a500'),
-                                        cells=dict(values=[indexs, results_matching[2]["_id"], results_matching[2]["matching score job 0"], results_matching[2]["degrees"], results_matching[2]["majors"], results_matching[2]["skills"]], line_color='darkslategray',
+                                        cells=dict(values=[_indexs, results_matching[2]["matching score job 0"], results_matching[2]["degrees"], results_matching[2]["majors"], results_matching[2]["skills"]], line_color='darkslategray',
                                                     fill_color='#f4f4f4'))
                                 ])
         fig.update_layout(width=800, height=500)
@@ -199,8 +192,8 @@ def calculate_scores(_resumes, _job_description, index):
         scores.append(score)
     return scores
 
-def ranked_resumes(_Resumes, _Jobs, index):
-    _Resumes['Scores'] = calculate_scores(_Resumes, _Jobs, index)
+def ranked_resumes(_Resumes, _Jobs, _index):
+    _Resumes['Scores'] = calculate_scores(_Resumes, _Jobs, _index)
     Ranked_resumes = _Resumes.sort_values(
         by=['Scores'], ascending=False).reset_index(drop=True)
 
@@ -357,20 +350,19 @@ def resume_printing(Ranked_resumes):
 
 async def main():
     await asyncio.gather(load_title_dasboard())
-    Resumes, Jobs, resumes = await asyncio.gather(load_input_data_Resumes(), load_input_data_Jobs(), load_input_data_resumes())
+    Resumes, Jobs = await asyncio.gather(load_input_data_Resumes(), load_input_data_Jobs())
+    Resumes_origin = copy.copy(Resumes)
+    Jobs_origin = copy.copy(Jobs)
     _ , index  = await asyncio.gather(show_description_name(Jobs), show_description(Jobs))
     info_retrieval = await asyncio.gather(show_information_retrieval(Jobs, index))
     info_retrieval_resumes = await asyncio.gather(show_information_retrieval_resumes(Resumes))
     await asyncio.gather(find_JD_by_keyword())
-    print(info_retrieval_resumes[0])
-    print(type(info_retrieval_resumes[0]))
-    print(resumes)
     await asyncio.gather(show_matching_rule(index, info_retrieval[0], info_retrieval_resumes[0]))
-    # scores = calculate_scores(resumes, Jobs)
-    Ranked_resumes = ranked_resumes(Resumes, Jobs, index)
+    Jobs_origin = file_Readert_resume(Jobs_origin)
+    Ranked_resumes = ranked_resumes(Resumes_origin, Jobs_origin, index)
     score_table_plot(Ranked_resumes)
-    lda_model, corpus = tfidf(Resumes)
+    lda_model, corpus = tfidf(Resumes_origin)
     topic_word_clound(lda_model)
-    show_sunburst_graph(lda_model, corpus, Resumes)
+    show_sunburst_graph(lda_model, corpus, Resumes_origin)
     resume_printing(Ranked_resumes)
 asyncio.run(main())
