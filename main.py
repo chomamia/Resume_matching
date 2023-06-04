@@ -15,11 +15,11 @@ import time
 from Job_resume_matching.extraction import extraction
 from Job_resume_matching.extraction_resume import extraction_resume
 from Job_resume_matching.matching import matching
-from Distill import upload_file_jobs_csv, upload_file_resumes_csv, upload_file_Resumes_csv
+from Distill import upload_file_jobs_csv, upload_file_resumes_csv, upload_file_Resumes_csv, upload_file_resumes_docx, upload_file_jd_docx
 import asyncio
 from Database.connect_database import QueryDatabase
 import copy
-from fileReader_csv import file_Readert_resume
+from fileReader_csv import file_Readert
 # import nest_asycio
 
 import yacs.config
@@ -29,19 +29,29 @@ def load_config() -> yacs.config.CfgNode:
     config = get_default_config()
     return config
 
-async def load_title_dasboard():
+def load_title_dasboard():
     image = Image.open('Images//logo.png')
     st.image(image, use_column_width=True)
-
     st.title("Resume Matcher")
+    option_yn = st.selectbox(
+            "Choose type data input?", options=['CSV', 'DOC'])
+    return option_yn
 
-async def load_input_data_Resumes():
+def load_input_data_Resumes():
     Resumes = upload_file_Resumes_csv()
     return Resumes
 
-async def load_input_data_Jobs():
+def load_input_data_Jobs():
     Jobs = upload_file_jobs_csv()
     return Jobs
+
+def load_input_data_Resumes_docx():
+    Resumes = upload_file_resumes_docx()
+    return Resumes
+
+def load_input_data_Jobs_docx():
+    Resumes = upload_file_jd_docx()
+    return Resumes
 
 async def load_input_data_resumes():
     resumes = upload_file_resumes_csv()
@@ -63,7 +73,7 @@ async def show_description_name(_Jobs):
             fig = go.Figure(data=[go.Table(header=dict(values=["Job No.", "Job Desc. Name"], line_color='darkslategray',
                                                     fill_color='lightskyblue'),
                                         cells=dict(values=[index, _Jobs['Name']], line_color='darkslategray',
-                                                    fill_color='cyan'))
+                                                    fill_color='#f4f4f4'))
                                 ])
             fig.update_layout(width=700, height=400)
             st.write(fig)
@@ -138,50 +148,39 @@ async def find_JD_by_keyword():
             result = database.get_resumes_by_keyword(keyword)
             print("result:", result)
 
-async def show_matching_rule(_indexs, _info_retrieval, _resumes):
+async def show_matching_rule(_indexs, _info_retrieval, _resumes, _Jobs, _Resumes):
     results_matching = await asyncio.gather(matching(_info_retrieval, _resumes))
     results_matching = results_matching[0]
-    option_yn = st.selectbox("Matching Ruler by model All-mpnet-base-v2?", options=['YES', 'NO'])
+    score_tfidf = calculate_scores(_Resumes,  _Jobs, _indexs)
+    final_score = []
+    for i in range(len(results_matching[0]["matching score job 0"])):
+        score = results_matching[0]["matching score job 0"][i] + results_matching[1]["matching score job 0"][i] + results_matching[2]["matching score job 0"][i] \
+                + score_tfidf[i] 
+        final_score.append(score)
+    data = {
+        "All-mpnet-base-v2": results_matching[0]["matching score job 0"],
+        "Paraphrase-MiniLM-L6-v2": results_matching[1]["matching score job 0"],
+        "All-MiniLM-L12-v1" : results_matching[2]["matching score job 0"],
+        "TF-IDF": score_tfidf,
+        "Final_score": final_score
+    }
+    df = pd.DataFrame(data)
+    df = df.sort_values(by=["Final_score"], ascending=False)
+    option_yn = st.selectbox("Matching Ruler by model Sentence Transformer", options=['YES', 'NO'])
     if option_yn == 'YES':
         _indexs = [a for a in range(len(results_matching[0]["degrees"]))]
         st.markdown("---")
-        st.markdown("### Matching Ruler by model All-mpnet-base-v2 :")
-        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
+        st.markdown("### Matching Ruler by model Sentence Transformer:")
+        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "All-mpnet-base-v2", "Paraphrase-MiniLM-L6-v2", "All-MiniLM-L12-v1", "TF-IDF", "Final Score"], line_color='darkslategray',
                                                     fill_color='#f0a500'),
-                                        cells=dict(values=[_indexs, results_matching[0]["matching score job 0"], results_matching[0]["degrees"], results_matching[0]["majors"], results_matching[0]["skills"]], line_color='darkslategray',
+                                        cells=dict(values=[_indexs, df["All-mpnet-base-v2"], df["Paraphrase-MiniLM-L6-v2"], df["All-MiniLM-L12-v1"], df["TF-IDF"], df["Final_score"]], line_color='darkslategray',
                                                     fill_color='#f4f4f4'))
                                 ])
         fig.update_layout(width=800, height=500)
         st.write(fig)
         st.markdown("---")
 
-    option_yn = st.selectbox("Matching Ruler by model SBERT Paraphrase-MiniLM-L6-v2?", options=['YES', 'NO'])
-    if option_yn == 'YES':
-        _indexs = [a for a in range(len(results_matching[1]["degrees"]))]
-        st.markdown("---")
-        st.markdown("### Matching Ruler by model SBERT Paraphrase-MiniLM-L6-v2 :")
-        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
-                                                    fill_color='#f0a500'),
-                                        cells=dict(values=[_indexs, results_matching[1]["matching score job 0"], results_matching[1]["degrees"], results_matching[1]["majors"], results_matching[1]["skills"]], line_color='darkslategray',
-                                                    fill_color='#f4f4f4'))
-                                ])
-        fig.update_layout(width=800, height=500)
-        st.write(fig)
-        st.markdown("---")
 
-    option_yn = st.selectbox("Matching Ruler by model SBERT Paraphrase-MiniLM-L12-v1?", options=['YES', 'NO'])
-    if option_yn == 'YES':
-        _indexs = [a for a in range(len(results_matching[2]["degrees"]))]
-        st.markdown("---")
-        st.markdown("### Matching Ruler by model SBERT Paraphrase-MiniLM-L12-v1:")
-        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "Matching Scores", "Degrees", "Majors", "Skills"], line_color='darkslategray',
-                                                    fill_color='#f0a500'),
-                                        cells=dict(values=[_indexs, results_matching[2]["matching score job 0"], results_matching[2]["degrees"], results_matching[2]["majors"], results_matching[2]["skills"]], line_color='darkslategray',
-                                                    fill_color='#f4f4f4'))
-                                ])
-        fig.update_layout(width=800, height=500)
-        st.write(fig)
-        st.markdown("---")
 
 @st.cache_data()
 def calculate_scores(_resumes, _job_description, index):
@@ -349,21 +348,30 @@ def resume_printing(Ranked_resumes):
         st.markdown("---")
 
 async def main():
-    await asyncio.gather(load_title_dasboard())
-    Resumes, Jobs = await asyncio.gather(load_input_data_Resumes(), load_input_data_Jobs())
+    choose_type = load_title_dasboard()
+    if choose_type == 'CSV':
+        Resumes, Jobs = load_input_data_Resumes(), load_input_data_Jobs()
+    else:
+        Resumes, Jobs = load_input_data_Resumes_docx(), load_input_data_Jobs_docx()
     Resumes_origin = copy.copy(Resumes)
     Jobs_origin = copy.copy(Jobs)
     _ , index  = await asyncio.gather(show_description_name(Jobs), show_description(Jobs))
     info_retrieval = await asyncio.gather(show_information_retrieval(Jobs, index))
     info_retrieval_resumes = await asyncio.gather(show_information_retrieval_resumes(Resumes))
     await asyncio.gather(find_JD_by_keyword())
-    await asyncio.gather(show_matching_rule(index, info_retrieval[0], info_retrieval_resumes[0]))
-    Jobs_origin = file_Readert_resume(Jobs_origin)
+    Jobs_origin = file_Readert(Jobs_origin)
+    Resumes_origin = file_Readert(Resumes_origin)
+    await asyncio.gather(show_matching_rule(index, info_retrieval[0], info_retrieval_resumes[0], Jobs_origin, Resumes_origin))
     Ranked_resumes = ranked_resumes(Resumes_origin, Jobs_origin, index)
-    score_table_plot(Ranked_resumes)
     lda_model, corpus = tfidf(Resumes_origin)
     topic_word_clound(lda_model)
     show_sunburst_graph(lda_model, corpus, Resumes_origin)
     resume_printing(Ranked_resumes)
-    
-asyncio.run(main())
+asyncio.run(main(), debug=False)
+
+
+
+
+# QueryDatabase("a", load_config()).insert_resume_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Resume.csv")
+# QueryDatabase("a", load_config()).insert_resume_it_viec_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Data\IT_viec\ResumeDataSet.csv")
+# QueryDatabase("a", load_config()).insert_job_it_viec_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Data\IT_viec\jobs.csv")

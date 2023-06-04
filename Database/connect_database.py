@@ -1,5 +1,7 @@
 import mysql.connector 
 from datetime import datetime
+import pandas as pd
+import yacs.config
 
 class QueryDatabase():
     def __init__(self, data, config):
@@ -36,3 +38,31 @@ class QueryDatabase():
         results = self.mycursor.fetchall()
         results = [result[0] for result in results]
         return results
+
+    def insert_resume_database(self, path_file_csv):
+        data = pd.read_csv(path_file_csv)
+        for i in range(len(data["ID"])):
+            create_time = self.create_time()
+            sql = "insert into {}.resumes (Name, Context, Category, create_time) values (%s,%s,%s,%s)".format(self.config.database.nameDB)
+            value = (str(data["ID"][i]), data["Resume_str"][i], data["Category"][i], create_time)
+            self.mycursor.execute(sql, value)
+            self.cnx.commit()
+
+    def insert_resume_it_viec_database(self, path_file_csv):
+        data = pd.read_csv(path_file_csv)
+        for i in range(len(data["Category"])):
+            create_time = self.create_time()
+            sql = "insert into {}.resumes (Name, Context, Category, create_time) values (%s,%s,%s,%s)".format(self.config.database.nameDB)
+            value = ("IT Viec " + str(i), data["Resume"][i], data["Category"][i], create_time)
+            self.mycursor.execute(sql, value)
+            self.cnx.commit()
+
+    def insert_job_it_viec_database(self, path_file_csv):
+        data = pd.read_csv(path_file_csv)
+        for i in range(len(data["job_id"])):
+            create_time = self.create_time()
+            sql = "insert into {}.jd (Name, Context, create_time) values (%s,%s,%s)".format(self.config.database.nameDB)
+            value = (data["job_name"][i], data["description"][i], create_time)
+            self.mycursor.execute(sql, value)
+            self.cnx.commit()
+

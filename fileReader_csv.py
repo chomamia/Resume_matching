@@ -26,7 +26,7 @@ def get_cleaned_words(document):
         document[i].append(sentence)
     return document
 
-def file_Readert_resume(file_csv):
+def file_Readert(file_csv):
     document = read_resumes(file_csv)
     doc = get_cleaned_words(document)
     Database = pd.DataFrame(document, columns=[

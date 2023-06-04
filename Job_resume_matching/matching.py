@@ -43,6 +43,6 @@ async def matching(jobs, resumes):
             resumes_matched_jobs = pd.DataFrame()
             resumes_matched_jobs = pd.concat([resumes_matched_jobs, resume_matched])
     # resumes_matched_json = transform_dataframe_to_json(resumes_matched_jobs)
-            resumes_matched_jobs = resumes_matched_jobs.sort_values(by=["matching score job 0"], ascending=False)
+            # resumes_matched_jobs = resumes_matched_jobs.sort_values(by=["matching score job 0"], ascending=False)
             results.append(resumes_matched_jobs)
     return results

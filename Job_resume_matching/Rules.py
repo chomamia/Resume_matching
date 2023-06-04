@@ -197,7 +197,7 @@ class Rules:
                 skills_score = resumes['Skills job ' + str(job_index) + ' semantic matching'][i]
                 degree_score = resumes['Degree job ' + str(job_index) + ' matching'][i]
                 major_score = resumes['Major job ' + str(job_index) + ' matching'][i]
-                final_score = (skills_score + degree_score + major_score) / 3
+                final_score = (skills_score + degree_score + major_score) / 3 * 100
                 resumes.loc[i, "matching score job " + str(job_index)] = round(final_score, 3)
             results.append(resumes)
         # print(results)

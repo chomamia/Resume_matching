@@ -1,12 +1,13 @@
 import nltk
 import spacy
 import re
-
+import os
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords
 import streamlit as st
 import pandas as pd
-
+from fileReader import Reader
+import datetime
 # Define english stopwords
 stop_words = stopwords.words('english')
 
@@ -58,6 +59,11 @@ def remove_tags(text, postags=['PROPN', 'NOUN', 'ADJ', 'VERB', 'ADV']):
             filtered.append(token.text)
     return filtered
 
+def save_uploaded_file(uploadedfile, path_folder):
+    with open(os.path.join(path_folder, uploadedfile.name),"bw") as f:
+        f.write(uploadedfile.getbuffer())
+    return st.success("Saved file :{} in tempDir".format(uploadedfile.name))
+
 def upload_file_Resumes_csv():
     upload_file = st.file_uploader("Choose a file Resumes type csv", key="1")
     if upload_file is not None:
@@ -68,19 +74,44 @@ def upload_file_Resumes_csv():
             return []
         
 def upload_file_resumes_csv():
-    upload_file = st.file_uploader("Choose a file resumes type csv", key = "2")
+    upload_file = st.file_uploader("Choose a file Resumes type csv", key = "2")
+    if upload_file is not None:
+        try:
+            df = pd.read_csv(upload_file, sep=',', header=None)
+            return df
+        except:
+            return []
+
+def upload_file_resumes_docx():
+    upload_files = st.file_uploader("Choose a file Resumes type docx", key = "5", accept_multiple_files = True)
+    name_folder = datetime.datetime.now()
+    name_folder = str(name_folder.year)+ "_" + str(name_folder.month)+ "_" + str(name_folder.day) +"_" + str(name_folder.hour)+ "_" + str(name_folder.minute)+ "_" + str(name_folder.second)
+    path_folder = os.path.join(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\static\input\resume", name_folder) 
+    if not os.path.exists(path_folder):
+        os.mkdir(path_folder)
+    for file in upload_files:
+        save_uploaded_file(file, path_folder)
+    data = Reader(path_folder)
+    return data
+
+
+def upload_file_jd_docx():
+    upload_files = st.file_uploader("Choose a file Job type docx", key = "7", accept_multiple_files = True)
+    name_folder = datetime.datetime.now()
+    name_folder = str(name_folder.year)+ "_" + str(name_folder.month)+ "_" + str(name_folder.day) +"_" + str(name_folder.hour)+ "_" + str(name_folder.minute)+ "_" + str(name_folder.second)
+    path_folder = os.path.join(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\static\input\job", name_folder) 
+    if not os.path.exists(path_folder):
+        os.mkdir(path_folder)
+    for file in upload_files:
+        save_uploaded_file(file, path_folder)
+    data = Reader(path_folder)
+    return data
+        
+def upload_file_jobs_csv():
+    upload_file = st.file_uploader("Choose a file Jobs type csv", key = "3")
     if upload_file is not None:
         try:
             df = pd.read_csv(upload_file)
             return df
         except:
             return []
-        
-def upload_file_jobs_csv():
-    upload_file = st.file_uploader("Choose a file Jobs type csv", key = "3")
-    if upload_file is not None:
-        # try:
-        df = pd.read_csv(upload_file)
-        return df
-        # except:
-        #     return []

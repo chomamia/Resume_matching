@@ -25,8 +25,19 @@ def read_resumes(list_of_resumes, resume_directory):
         placeholder.append(temp)
     return placeholder
 
+def read_resumes_docx(path_file):
+    list_name_file = os.listdir(path_file)
+    placeholder = []
+    for name_file in list_name_file:
+        temp = []
+        temp.append(name_file)
+        text = tx.process(os.path.join(path_file, name_file), encoding='ascii')
+        text = str(text, 'utf-8')
+        temp.append(text)
+        placeholder.append(temp)
+    return placeholder
 
-document = read_resumes(resume_names, resume_dir)
+# document = read_resumes(resume_names, resume_dir)
 
 
 def get_cleaned_words(document):
@@ -40,14 +51,21 @@ def get_cleaned_words(document):
     return document
 
 
-Doc = get_cleaned_words(document)
+# Doc = get_cleaned_words(document)
 
-Database = pd.DataFrame(document, columns=[
-                        "Name", "Context", "Cleaned", "Selective", "Selective_Reduced", "TF_Based"])
+# Database = pd.DataFrame(document, columns=[
+#                         "Name", "Context", "Cleaned", "Selective", "Selective_Reduced", "TF_Based"])
 
-Database.to_csv("Resume_Data.csv", index=False)
+# Database.to_csv("Resume_Data.csv", index=False)
 
 # Database.to_json("Resume_Data.json", index=False)
+
+def Reader(path_files):
+    docummets = read_resumes_docx(path_files)
+    Docs = get_cleaned_words(docummets)
+    df = pd.DataFrame(docummets, columns=[
+                        "Name", "Context", "Cleaned", "Selective", "Selective_Reduced", "TF_Based"])
+    return df
 
 
 def read_jobdescriptions(job_description_names, job_desc_dir):
@@ -62,11 +80,11 @@ def read_jobdescriptions(job_description_names, job_desc_dir):
     return placeholder
 
 
-job_document = read_jobdescriptions(job_description_names, job_desc_dir)
+# job_document = read_jobdescriptions(job_description_names, job_desc_dir)
 
-Jd = get_cleaned_words(job_document)
+# Jd = get_cleaned_words(job_document)
 
-jd_database = pd.DataFrame(Jd, columns=[
-                           "Name", "Context", "Cleaned", "Selective", "Selective_Reduced", "TF_Based"])
+# jd_database = pd.DataFrame(Jd, columns=[
+#                            "Name", "Context", "Cleaned", "Selective", "Selective_Reduced", "TF_Based"])
 
-jd_database.to_csv("Job_Data.csv", index=False)
+# jd_database.to_csv("Job_Data.csv", index=False)
