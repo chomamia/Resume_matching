@@ -27,7 +27,7 @@ def transform_dataframe_to_json(dataframe):
 
     return json_data
 
-async def matching(jobs, resumes):
+async def matching(jobs, resumes, config):
     results = []
     with open('Resources/data/labels.json') as fp:
             labels = json.load(fp)
@@ -37,7 +37,7 @@ async def matching(jobs, resumes):
     # jobs = modifying_type_job(jobs)
     rules = Rules(labels, resumes, jobs)
     for job_index in range(len(jobs)):
-        resumes_matched = await asyncio.gather(rules.matching_score(resumes, jobs, job_index))
+        resumes_matched = await asyncio.gather(rules.matching_score(resumes, jobs, job_index, config))
         # resumes_matched_jobs = resumes_matched_jobs.append(resumes_matched)
         for resume_matched in resumes_matched[0]:
             resumes_matched_jobs = pd.DataFrame()

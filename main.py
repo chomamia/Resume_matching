@@ -1,9 +1,7 @@
 import matplotlib.colors as mcolors
 import gensim
 import gensim.corpora as corpora
-from operator import index
 from wordcloud import WordCloud
-from pandas._config.config import options
 import pandas as pd
 import streamlit as st
 import plotly.express as px
@@ -20,15 +18,15 @@ import asyncio
 from Database.connect_database import QueryDatabase
 import copy
 from fileReader_csv import file_Readert
-# import nest_asycio
-
 import yacs.config
 from config import get_default_config
+
 
 def load_config() -> yacs.config.CfgNode:
     config = get_default_config()
     return config
 
+config = load_config()
 def load_title_dasboard():
     image = Image.open('Images//logo.png')
     st.image(image, use_column_width=True)
@@ -46,11 +44,11 @@ def load_input_data_Jobs():
     return Jobs
 
 def load_input_data_Resumes_docx():
-    Resumes = upload_file_resumes_docx()
+    Resumes = upload_file_resumes_docx(config)
     return Resumes
 
 def load_input_data_Jobs_docx():
-    Resumes = upload_file_jd_docx()
+    Resumes = upload_file_jd_docx(config)
     return Resumes
 
 async def load_input_data_resumes():
@@ -143,24 +141,24 @@ async def find_JD_by_keyword():
     if option_yn == 'YES':
         keyword = st.text_area("Enter keywords")
         if keyword:
-            config = load_config()
             database = QueryDatabase(keyword, config)
             result = database.get_resumes_by_keyword(keyword)
             print("result:", result)
 
 async def show_matching_rule(_indexs, _info_retrieval, _resumes, _Jobs, _Resumes):
-    results_matching = await asyncio.gather(matching(_info_retrieval, _resumes))
+    results_matching = await asyncio.gather(matching(_info_retrieval, _resumes, config))
     results_matching = results_matching[0]
     score_tfidf = calculate_scores(_Resumes,  _Jobs, _indexs)
     final_score = []
     for i in range(len(results_matching[0]["matching score job 0"])):
         score = results_matching[0]["matching score job 0"][i] + results_matching[1]["matching score job 0"][i] + results_matching[2]["matching score job 0"][i] \
-                + score_tfidf[i] 
+                + results_matching[3]["matching score job 0"][i] + score_tfidf[i] 
         final_score.append(score)
     data = {
         "All-mpnet-base-v2": results_matching[0]["matching score job 0"],
         "Paraphrase-MiniLM-L6-v2": results_matching[1]["matching score job 0"],
         "All-MiniLM-L12-v1" : results_matching[2]["matching score job 0"],
+        "GPT3": results_matching[3]["matching score job 0"],
         "TF-IDF": score_tfidf,
         "Final_score": final_score
     }
@@ -171,9 +169,9 @@ async def show_matching_rule(_indexs, _info_retrieval, _resumes, _Jobs, _Resumes
         _indexs = [a for a in range(len(results_matching[0]["degrees"]))]
         st.markdown("---")
         st.markdown("### Matching Ruler by model Sentence Transformer:")
-        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 1 , 1, 2, 2], header=dict(values=["Index", "All-mpnet-base-v2", "Paraphrase-MiniLM-L6-v2", "All-MiniLM-L12-v1", "TF-IDF", "Final Score"], line_color='darkslategray',
+        fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 2 , 2, 2, 2, 2], header=dict(values=["Index", "All-mpnet-base-v2", "Paraphrase-MiniLM-L6-v2", "All-MiniLM-L12-v1","GPT3", "TF-IDF", "Final Score"], line_color='darkslategray',
                                                     fill_color='#f0a500'),
-                                        cells=dict(values=[_indexs, df["All-mpnet-base-v2"], df["Paraphrase-MiniLM-L6-v2"], df["All-MiniLM-L12-v1"], df["TF-IDF"], df["Final_score"]], line_color='darkslategray',
+                                        cells=dict(values=[_indexs, df["All-mpnet-base-v2"], df["Paraphrase-MiniLM-L6-v2"], df["All-MiniLM-L12-v1"], df["GPT3"], df["TF-IDF"], df["Final_score"]], line_color='darkslategray',
                                                     fill_color='#f4f4f4'))
                                 ])
         fig.update_layout(width=800, height=500)
@@ -353,20 +351,23 @@ async def main():
         Resumes, Jobs = load_input_data_Resumes(), load_input_data_Jobs()
     else:
         Resumes, Jobs = load_input_data_Resumes_docx(), load_input_data_Jobs_docx()
-    Resumes_origin = copy.copy(Resumes)
-    Jobs_origin = copy.copy(Jobs)
-    _ , index  = await asyncio.gather(show_description_name(Jobs), show_description(Jobs))
-    info_retrieval = await asyncio.gather(show_information_retrieval(Jobs, index))
-    info_retrieval_resumes = await asyncio.gather(show_information_retrieval_resumes(Resumes))
-    await asyncio.gather(find_JD_by_keyword())
-    Jobs_origin = file_Readert(Jobs_origin)
-    Resumes_origin = file_Readert(Resumes_origin)
-    await asyncio.gather(show_matching_rule(index, info_retrieval[0], info_retrieval_resumes[0], Jobs_origin, Resumes_origin))
-    Ranked_resumes = ranked_resumes(Resumes_origin, Jobs_origin, index)
-    lda_model, corpus = tfidf(Resumes_origin)
-    topic_word_clound(lda_model)
-    show_sunburst_graph(lda_model, corpus, Resumes_origin)
-    resume_printing(Ranked_resumes)
+    try:
+        Resumes_origin = copy.copy(Resumes)
+        Jobs_origin = copy.copy(Jobs)
+        _ , index  = await asyncio.gather(show_description_name(Jobs), show_description(Jobs))
+        info_retrieval = await asyncio.gather(show_information_retrieval(Jobs, index))
+        info_retrieval_resumes = await asyncio.gather(show_information_retrieval_resumes(Resumes))
+        await asyncio.gather(find_JD_by_keyword())
+        Jobs_origin = file_Readert(Jobs_origin)
+        Resumes_origin = file_Readert(Resumes_origin)
+        await asyncio.gather(show_matching_rule(index, info_retrieval[0], info_retrieval_resumes[0], Jobs_origin, Resumes_origin))
+        Ranked_resumes = ranked_resumes(Resumes_origin, Jobs_origin, index)
+        lda_model, corpus = tfidf(Resumes_origin)
+        topic_word_clound(lda_model)
+        show_sunburst_graph(lda_model, corpus, Resumes_origin)
+        resume_printing(Ranked_resumes)
+    except Exception as e:
+        print ("Warring:", e)
 asyncio.run(main(), debug=False)
 
 
