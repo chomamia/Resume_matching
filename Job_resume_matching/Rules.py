@@ -46,7 +46,10 @@ class Rules:
 
     def degree_matching(self, resumes, jobs, job_index):
         """calculate the final degree matching scores between resumes and job description"""
-        job_min_degree = self.degrees_importance[jobs['Minimum degree level'][job_index]]
+        try:
+            job_min_degree = self.degrees_importance[jobs['Minimum degree level'][job_index]]
+        except:
+            job_min_degree = 1
         resumes['Degree job ' + str(job_index) + ' matching'] = 0
         for i, row in resumes.iterrows():
             match_scores = []
@@ -223,9 +226,6 @@ class Rules:
         # matching skills
         num_unique_job_skills, job_skills = self.unique_job_skills(jobs, job_index)
         # # matching skills semantically
-        # resumes1 = self.skills_semantic_matching(resumes, job_index, job_skills)
-        # resumes_L6_v2 = self.skills_semantic_matching_by_MiniLM_L6_v2(resumes_L6_v2, job_index, job_skills)
-        # resumes_L12_v1 = self.skills_semantic_matching_by_MiniLM_L12_v1(resumes_L12_v1, job_index, job_skills)
         resumes1, resumes_L6_v2, resumes_L12_v1, resume_gpt3 = await asyncio.gather(self.skills_semantic_matching(resumes, job_index, job_skills), \
                                                                        self.skills_semantic_matching_by_MiniLM_L6_v2(resumes_L6_v2, job_index, job_skills), \
                                                                         self.skills_semantic_matching_by_MiniLM_L12_v1(resumes_L12_v1, job_index, job_skills), \

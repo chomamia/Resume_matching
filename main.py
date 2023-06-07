@@ -56,6 +56,7 @@ async def load_input_data_resumes():
     return resumes
 
 async def show_description_name(_Jobs):
+    """ Show all description with data input"""
     if len(_Jobs['Name']) <= 1:
         st.write(
             "There is only 1 Job Description present. It will be used to create scores.")
@@ -77,6 +78,7 @@ async def show_description_name(_Jobs):
             st.write(fig)
 
 async def show_description(_Jobs):
+    """Choose index description before use model matching rule"""
     # Asking to chose the Job Description
     index = st.slider("Which JD to select ? : ", 0,
                     len(_Jobs['Name'])-1, 1)
@@ -98,6 +100,7 @@ async def show_description(_Jobs):
     return index
 
 async def show_information_retrieval(_Jobs, _index):
+    """Extraction informaion JD and show Information JD by index in table"""
     info_retrieval = extraction(_Jobs, _index)
     option_yn = st.selectbox("Information Retrieval ?", options=['YES', 'NO'])
     if option_yn == 'YES':
@@ -115,6 +118,7 @@ async def show_information_retrieval(_Jobs, _index):
     return info_retrieval
 
 async def show_information_retrieval_resumes(_Resumes):
+    """Extraction informaion Resume and show Information Resume in table"""
     info_retrieval_resume = extraction_resume(_Resumes)
     index = [a for a in range(len(info_retrieval_resume['skills']))]
     option_yn = st.selectbox("Information Retrieval Resumes ?", options=['YES', 'NO'])
@@ -137,6 +141,7 @@ async def show_information_retrieval_resumes(_Resumes):
     return info_retrieval_resume
 
 async def find_JD_by_keyword():
+    """Fillter JB by keyword input"""
     option_yn = st.selectbox("Find JB by keyword ?", options=['YES', 'NO'])
     if option_yn == 'YES':
         keyword = st.text_area("Enter keywords")
@@ -146,6 +151,16 @@ async def find_JD_by_keyword():
             print("result:", result)
 
 async def show_matching_rule(_indexs, _info_retrieval, _resumes, _Jobs, _Resumes):
+    """ Processing mathching rule by 5 model:All-mpnet-base-v2, Paraphrase-MiniLM-L6-v2, All-MiniLM-L12-v1, GPT3, TF-IDF, Final_score
+        with: _indexs: choose index JD
+              _info_retieval: JD after extraction by index
+              _resumes: Resumes after extraciton
+              _Jobs: Jobs in type fileReder
+              _Resume: Resume in type fileReder
+
+        output: Dataframe
+        Show output in table on streamlit
+    """
     results_matching = await asyncio.gather(matching(_info_retrieval, _resumes, config))
     results_matching = results_matching[0]
     score_tfidf = calculate_scores(_Resumes,  _Jobs, _indexs)
@@ -346,7 +361,9 @@ def resume_printing(Ranked_resumes):
         st.markdown("---")
 
 async def main():
+    # load title dasboard
     choose_type = load_title_dasboard()
+    # load data input
     if choose_type == 'CSV':
         Resumes, Jobs = load_input_data_Resumes(), load_input_data_Jobs()
     else:
@@ -354,13 +371,20 @@ async def main():
     try:
         Resumes_origin = copy.copy(Resumes)
         Jobs_origin = copy.copy(Jobs)
+        # show description name ny data origin
         _ , index  = await asyncio.gather(show_description_name(Jobs), show_description(Jobs))
+        # Extraction information from JD
         info_retrieval = await asyncio.gather(show_information_retrieval(Jobs, index))
+        # Extraction information from Resumes
         info_retrieval_resumes = await asyncio.gather(show_information_retrieval_resumes(Resumes))
+        # Fillter JD by input keyword
         await asyncio.gather(find_JD_by_keyword())
+        # Convert type Resume and JB origin to type use TF-IDF
         Jobs_origin = file_Readert(Jobs_origin)
         Resumes_origin = file_Readert(Resumes_origin)
+        # Matching Rule use 5 model 
         await asyncio.gather(show_matching_rule(index, info_retrieval[0], info_retrieval_resumes[0], Jobs_origin, Resumes_origin))
+        # Topic modeling
         Ranked_resumes = ranked_resumes(Resumes_origin, Jobs_origin, index)
         lda_model, corpus = tfidf(Resumes_origin)
         topic_word_clound(lda_model)
