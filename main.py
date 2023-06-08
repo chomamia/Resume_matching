@@ -56,7 +56,7 @@ async def load_input_data_resumes():
     return resumes
 
 async def show_description_name(_Jobs):
-    """ Show all description with data input"""
+    # """ Show all description with data input"""
     if len(_Jobs['Name']) <= 1:
         st.write(
             "There is only 1 Job Description present. It will be used to create scores.")
@@ -78,7 +78,7 @@ async def show_description_name(_Jobs):
             st.write(fig)
 
 async def show_description(_Jobs):
-    """Choose index description before use model matching rule"""
+    # """Choose index description before use model matching rule"""
     # Asking to chose the Job Description
     index = st.slider("Which JD to select ? : ", 0,
                     len(_Jobs['Name'])-1, 1)
@@ -100,7 +100,7 @@ async def show_description(_Jobs):
     return index
 
 async def show_information_retrieval(_Jobs, _index):
-    """Extraction informaion JD and show Information JD by index in table"""
+    # """Extraction informaion JD and show Information JD by index in table"""
     info_retrieval = extraction(_Jobs, _index)
     option_yn = st.selectbox("Information Retrieval ?", options=['YES', 'NO'])
     if option_yn == 'YES':
@@ -118,7 +118,7 @@ async def show_information_retrieval(_Jobs, _index):
     return info_retrieval
 
 async def show_information_retrieval_resumes(_Resumes):
-    """Extraction informaion Resume and show Information Resume in table"""
+    # """Extraction informaion Resume and show Information Resume in table"""
     info_retrieval_resume = extraction_resume(_Resumes)
     index = [a for a in range(len(info_retrieval_resume['skills']))]
     option_yn = st.selectbox("Information Retrieval Resumes ?", options=['YES', 'NO'])
@@ -141,26 +141,37 @@ async def show_information_retrieval_resumes(_Resumes):
     return info_retrieval_resume
 
 async def find_JD_by_keyword():
-    """Fillter JB by keyword input"""
-    option_yn = st.selectbox("Find JB by keyword ?", options=['YES', 'NO'])
+    # """Fillter JB by keyword input"""
+    option_yn = st.selectbox("Find Resumes by keyword ?", options=['YES', 'NO'])
     if option_yn == 'YES':
         keyword = st.text_area("Enter keywords")
         if keyword:
             database = QueryDatabase(keyword, config)
             result = database.get_resumes_by_keyword(keyword)
-            print("result:", result)
+            _indexs = [a for a in range(len(result["Name"]))]
+            st.markdown("---")
+            st.markdown("### Resumes by keyword:")
+            fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 2 ], header=dict(values=["Index", "Name", "Context"], line_color='darkslategray',
+                                                        fill_color='#f0a500'),
+                                            cells=dict(values=[_indexs, result["Name"], result["Context"]], line_color='darkslategray',
+                                                        fill_color='#f4f4f4'))
+                                    ])
+            fig.update_layout(width=800, height=500)
+            st.write(fig)
+            st.markdown("---")
+
 
 async def show_matching_rule(_indexs, _info_retrieval, _resumes, _Jobs, _Resumes):
-    """ Processing mathching rule by 5 model:All-mpnet-base-v2, Paraphrase-MiniLM-L6-v2, All-MiniLM-L12-v1, GPT3, TF-IDF, Final_score
-        with: _indexs: choose index JD
-              _info_retieval: JD after extraction by index
-              _resumes: Resumes after extraciton
-              _Jobs: Jobs in type fileReder
-              _Resume: Resume in type fileReder
+    # """ Processing mathching rule by 5 model:All-mpnet-base-v2, Paraphrase-MiniLM-L6-v2, All-MiniLM-L12-v1, GPT3, TF-IDF, Final_score
+    #     with: _indexs: choose index JD
+    #           _info_retieval: JD after extraction by index
+    #           _resumes: Resumes after extraciton
+    #           _Jobs: Jobs in type fileReder
+    #           _Resume: Resume in type fileReder
 
-        output: Dataframe
-        Show output in table on streamlit
-    """
+    #     output: Dataframe
+    #     Show output in table on streamlit
+    # """
     results_matching = await asyncio.gather(matching(_info_retrieval, _resumes, config))
     results_matching = results_matching[0]
     score_tfidf = calculate_scores(_Resumes,  _Jobs, _indexs)
@@ -346,7 +357,7 @@ def resume_printing(Ranked_resumes):
         plt.tight_layout(pad=0)
         st.pyplot(plt)
 
-        st.write("With a Match Score of :", Ranked_resumes.iloc[indx-1, 6])
+        # st.write("With a Match Score of :", Ranked_resumes.iloc[indx-1, 6])
         fig = go.Figure(data=[go.Table(
             header=dict(values=["Resume"],
                         fill_color='#f0a500',
@@ -392,11 +403,11 @@ async def main():
         resume_printing(Ranked_resumes)
     except Exception as e:
         print ("Warring:", e)
-asyncio.run(main(), debug=False)
+# asyncio.run(main(), debug=False)
 
 
 
 
-# QueryDatabase("a", load_config()).insert_resume_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Resume.csv")
+QueryDatabase("a", load_config()).insert_resume_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Resume_Data.csv")
 # QueryDatabase("a", load_config()).insert_resume_it_viec_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Data\IT_viec\ResumeDataSet.csv")
 # QueryDatabase("a", load_config()).insert_job_it_viec_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Data\IT_viec\jobs.csv")

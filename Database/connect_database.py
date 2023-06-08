@@ -29,22 +29,28 @@ class QueryDatabase():
             list_keyword = list_keyword.split(",")
         else:
             list_keyword = [list_keyword]
-        sql = "select name_jobs from {}.jd where ".format(self.config.database.nameDB)
+        sql = "select Name, Context from {}.resumes where ".format(self.config.database.nameDB)
         for keyword in list_keyword:
             sql = sql + "context like " + "'%" + keyword + "%' and " 
         sql = sql[:-5]
-        print(sql)
         self.mycursor.execute(sql)
         results = self.mycursor.fetchall()
-        results = [result[0] for result in results]
-        return results
+        datas = []
+        for result in results:
+            data = {
+                "Name": result[0],
+                "Context": result[1]
+            }
+            datas.append(data)
+        df = pd.DataFrame.from_dict(datas, orient="columns")
+        return df
 
     def insert_resume_database(self, path_file_csv):
         data = pd.read_csv(path_file_csv)
-        for i in range(len(data["ID"])):
+        for i in range(len(data["Name"])):
             create_time = self.create_time()
             sql = "insert into {}.resumes (Name, Context, Category, create_time) values (%s,%s,%s,%s)".format(self.config.database.nameDB)
-            value = (str(data["ID"][i]), data["Resume_str"][i], data["Category"][i], create_time)
+            value = (str(data["Name"][i]), data["Context"][i], "Machine learning", create_time)
             self.mycursor.execute(sql, value)
             self.cnx.commit()
 
