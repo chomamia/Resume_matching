@@ -335,6 +335,47 @@ def show_sunburst_graph(_lda_model, _corpus, _Resumes):
                     color='Dominant Topic', color_continuous_scale='viridis', width=800, height=800, title="Topic Distribution Graph")
     st.write(fig3)
 
+def format_topics_sentences_module(ldamodel, corpus, texts):
+    # Init output
+    sent_topics_df = pd.DataFrame()
+
+    # Get main topic in each document
+    for i, row in enumerate(ldamodel[corpus]):
+        row = sorted(row[0], key=lambda x: (x[1]), reverse=True)
+        # Get the Dominant topic, Perc Contribution and Keywords for each document
+        for j, (topic_num, prop_topic) in enumerate(row):
+            if j == 0:  # => dominant topic
+                wp = ldamodel.show_topic(topic_num)
+                topic_keywords = ", ".join([word for word, prop in wp])
+                sent_topics_df = pd.concat([sent_topics_df, pd.DataFrame([pd.Series([int(topic_num), round(prop_topic,4), topic_keywords])])], ignore_index=True )
+                # sent_topics_df = sent_topics_df.append(pd.Series([int(topic_num), round(prop_topic,4), topic_keywords]), ignore_index=True)
+            else:
+                break
+    sent_topics_df.columns = ['Dominant_Topic', 'Perc_Contribution', 'Topic_Keywords']
+
+    # Add original text to the end of the output
+    contents = pd.Series(texts)
+    # sent_topics_df = pd.concat([sent_topics_df, contents], axis=1)
+    return(sent_topics_df)
+
+def show_topics_in_sentences(_ldamodel, _corpus, _text):
+    _text = list(_text["Context"])
+    sent_topic = format_topics_sentences_module(ldamodel=_ldamodel, corpus=_corpus, texts=_text)
+    df_dominant_topic = sent_topic.reset_index()
+    df_dominant_topic.columns = ['Document_No', 'Dominant_Topic', 'Topic_Perc_Contrib', 'Keywords']
+    df_dominant_topic.head(10)
+    st.markdown("---")
+    st.markdown("### Show Topic modeling each Resumes:")
+    fig = go.Figure(data=[go.Table(columnwidth = [1, 2, 2 , 2, 2], header=dict(values=["Document_No", "Dominant_Topic", "Topic_Perc_Contrib","Keywords"], line_color='darkslategray',
+                                                fill_color='#f0a500'),
+                                    cells=dict(values=[df_dominant_topic["Document_No"], df_dominant_topic["Dominant_Topic"], df_dominant_topic["Topic_Perc_Contrib"], df_dominant_topic["Keywords"]], line_color='darkslategray',
+                                                fill_color='#f4f4f4'))
+                            ])
+    fig.update_layout(width=800, height=500)
+    st.write(fig)
+    st.markdown("---")
+
+
 def resume_printing(Ranked_resumes):
     option_2 = st.selectbox("Show the Best Matching Resumes?", options=[
     'YES', 'NO'])
@@ -399,15 +440,16 @@ async def main():
         Ranked_resumes = ranked_resumes(Resumes_origin, Jobs_origin, index)
         lda_model, corpus = tfidf(Resumes_origin)
         topic_word_clound(lda_model)
+        show_topics_in_sentences(lda_model, corpus, Resumes_origin)
         show_sunburst_graph(lda_model, corpus, Resumes_origin)
         resume_printing(Ranked_resumes)
     except Exception as e:
         print ("Warring:", e)
-# asyncio.run(main(), debug=False)
+asyncio.run(main(), debug=False)
 
 
 
 
-QueryDatabase("a", load_config()).insert_resume_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Resume_Data.csv")
+# QueryDatabase("a", load_config()).insert_resume_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Resume_Data.csv")
 # QueryDatabase("a", load_config()).insert_resume_it_viec_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Data\IT_viec\ResumeDataSet.csv")
 # QueryDatabase("a", load_config()).insert_job_it_viec_database(r"C:\Users\huuph\OneDrive\Documents\resume_matching\Resume_matching\Data\IT_viec\jobs.csv")
