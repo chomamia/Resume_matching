@@ -445,8 +445,7 @@ async def main():
         resume_printing(Ranked_resumes)
     except Exception as e:
         print ("Warring:", e)
-asyncio.run(main(), debug=False)
-
+asyncio.run(main(), debug=False) 
 
 
 
