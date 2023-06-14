@@ -12,7 +12,7 @@ config.database.nameDB = 'mydb'
 config.database.port = '3306'
 
 config.openai = ConfigNode()
-config.openai.api_key = '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'
+config.openai.api_key = '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'
 
 config.save_data = ConfigNode()
 config.save_data.resume = 'static/input/resume'

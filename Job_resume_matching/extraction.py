@@ -26,6 +26,19 @@ def extraction(job_descriptions, index):
     # print(type(jobs_json))
     return jobs.iloc[[index]]
 
+def extraction_jobs_all(job_descriptions):
+    degrees_patterns_path = 'Resources/data/degrees.jsonl'
+    majors_patterns_path = 'Resources/data/majors.jsonl'
+    skills_patterns_path = 'Resources/data/skills.jsonl'
+    # jobs = pd.read_csv(job_descriptions, index_col=0)
+    jobs = job_descriptions
+    jobs.set_index('Name', inplace = True)
+    job_extraction = JobInfoExtraction(skills_patterns_path, majors_patterns_path, degrees_patterns_path, jobs)
+    jobs = job_extraction.extract_entities(jobs)
+    # jobs_json = transform_dataframe_to_json(jobs)
+    # print(type(jobs_json))
+    return jobs
+
 def main():
     extraction('/home/phuonghuu/Phuong_workspace/Naive-Resume-Matching/Demo/Job_Data.csv',1)
 

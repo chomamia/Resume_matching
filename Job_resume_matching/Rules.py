@@ -242,3 +242,31 @@ class Rules:
             results.append(resumes)
         # print(results)
         return results
+    
+    async def matching_score_evaluate(self, resumes, jobs, job_index, config):
+        results = []
+        # matching degrees
+        resumes = self.degree_matching(resumes, jobs, job_index)
+        # matching majors
+        resumes = self.major_matching(resumes, jobs, job_index)
+        resumes_L6_v2 = resumes.copy()
+        resumes_L12_v1 = resumes.copy()
+        resumes_GPT3 = resumes.copy()
+        # matching skills
+        num_unique_job_skills, job_skills = self.unique_job_skills(jobs, job_index)
+        # # matching skills semantically
+        resumes1, resumes_L6_v2, resumes_L12_v1 = await asyncio.gather(self.skills_semantic_matching(resumes, job_index, job_skills), \
+                                                                       self.skills_semantic_matching_by_MiniLM_L6_v2(resumes_L6_v2, job_index, job_skills), \
+                                                                        self.skills_semantic_matching_by_MiniLM_L12_v1(resumes_L12_v1, job_index, job_skills))
+        for resumes in [resumes1, resumes_L6_v2, resumes_L12_v1]:
+            resumes["matching score job " + str(job_index)] = 0
+            resumes["job index"] = job_index
+            for i, row in self.resumes.iterrows():
+                skills_score = resumes['Skills job ' + str(job_index) + ' semantic matching'][i]
+                degree_score = resumes['Degree job ' + str(job_index) + ' matching'][i]
+                major_score = resumes['Major job ' + str(job_index) + ' matching'][i]
+                final_score = (skills_score + degree_score + major_score) / 3 * 100
+                resumes.loc[i, "matching score job " + str(job_index)] = round(final_score, 3)
+            results.append(resumes)
+        # print(results)
+        return results

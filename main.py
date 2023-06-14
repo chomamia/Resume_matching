@@ -260,7 +260,7 @@ def tfidf(_Resumes):
     corpus = [id2word.doc2bow(text) for text in document]
 
 
-    lda_model = gensim.models.ldamodel.LdaModel(corpus=corpus, id2word=id2word, num_topics=6, random_state=100,
+    lda_model = gensim.models.ldamodel.LdaModel(corpus=corpus, id2word=id2word, num_topics=7, random_state=100,
                                                 update_every=3, chunksize=100, passes=50, alpha='auto', per_word_topics=True)
     return lda_model, corpus
 
@@ -300,11 +300,10 @@ def topic_word_clound(lda_model):
 
     topics = lda_model.show_topics(formatted=False)
 
-    fig, axes = plt.subplots(2, 3, figsize=(10, 10), sharex=True, sharey=True)
-
-    for i, ax in enumerate(axes.flatten()):
-        fig.add_subplot(ax)
-        topic_words = dict(topics[i][1])
+    fig = plt.figure(figsize=(10, 10))
+    for i in range(1,8):
+        fig.add_subplot(3,3,i)
+        topic_words = dict(topics[i-1][1])
         cloud.generate_from_frequencies(topic_words, max_font_size=300)
         plt.gca().imshow(cloud)
         plt.gca().set_title('Topic ' + str(i), fontdict=dict(size=16))

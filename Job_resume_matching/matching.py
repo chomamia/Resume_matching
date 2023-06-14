@@ -46,3 +46,23 @@ async def matching(jobs, resumes, config):
             # resumes_matched_jobs = resumes_matched_jobs.sort_values(by=["matching score job 0"], ascending=False)
             results.append(resumes_matched_jobs)
     return results
+
+async def matching_evaluate(jobs, resumes, config):
+    results = []
+    with open('Resources/data/labels.json') as fp:
+            labels = json.load(fp)
+    # jobs = pd.read_csv('Resources/data/job_description_by_spacy.csv', index_col=0)
+    # resumes = pd.read_csv('Resources/data/resumes_by_spacy.csv', index_col=0)
+    resumes = modifying_type_resume(resumes)
+    # jobs = modifying_type_job(jobs)
+    rules = Rules(labels, resumes, jobs)
+    for job_index in range(len(jobs)):
+        resumes_matched = await asyncio.gather(rules.matching_score_evaluate(resumes, jobs, job_index, config))
+        # resumes_matched_jobs = resumes_matched_jobs.append(resumes_matched)
+        for resume_matched in resumes_matched[0]:
+            resumes_matched_jobs = pd.DataFrame()
+            resumes_matched_jobs = pd.concat([resumes_matched_jobs, resume_matched])
+    # resumes_matched_json = transform_dataframe_to_json(resumes_matched_jobs)
+            # resumes_matched_jobs = resumes_matched_jobs.sort_values(by=["matching score job 0"], ascending=False)
+            results.append(resumes_matched_jobs)
+    return results
