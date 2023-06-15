@@ -50,16 +50,6 @@ def get_cleaned_words(document):
         document[i].append(sentence)
     return document
 
-
-# Doc = get_cleaned_words(document)
-
-# Database = pd.DataFrame(document, columns=[
-#                         "Name", "Context", "Cleaned", "Selective", "Selective_Reduced", "TF_Based"])
-
-# Database.to_csv("Resume_Data.csv", index=False)
-
-# Database.to_json("Resume_Data.json", index=False)
-
 def Reader(path_files):
     docummets = read_resumes_docx(path_files)
     Docs = get_cleaned_words(docummets)
@@ -78,13 +68,3 @@ def read_jobdescriptions(job_description_names, job_desc_dir):
         temp.append(text)
         placeholder.append(temp)
     return placeholder
-
-
-# job_document = read_jobdescriptions(job_description_names, job_desc_dir)
-
-# Jd = get_cleaned_words(job_document)
-
-# jd_database = pd.DataFrame(Jd, columns=[
-#                            "Name", "Context", "Cleaned", "Selective", "Selective_Reduced", "TF_Based"])
-
-# jd_database.to_csv("Job_Data.csv", index=False)
